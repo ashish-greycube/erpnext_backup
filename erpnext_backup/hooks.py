@@ -90,23 +90,23 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"erpnext_backup.tasks.all"
-# 	],
-# 	"daily": [
-# 		"erpnext_backup.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"erpnext_backup.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"erpnext_backup.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"erpnext_backup.tasks.monthly"
-# 	]
-# }
+scheduler_events = {
+	# "all": [
+    #     ""
+	# ],
+	"daily": [
+		"erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.take_backups_daily"
+	],
+	"hourly": [
+		"erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.take_backups_hourly"
+	],
+	"weekly": [
+		"erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.take_backups_weekly"
+	]
+	# "monthly": [
+	# 	""
+	# ]
+}
 
 # Testing
 # -------
