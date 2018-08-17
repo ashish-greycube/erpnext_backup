@@ -157,8 +157,8 @@ def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log)
 	rclone_remote_name=frappe.db.get_value('Backup Settings', None, 'rclone_remote_name')
 	rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 
-	# destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
-	destpath = rclone_remote_name+":"+final_dest
+	destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
+	# destpath = rclone_remote_name+":"+final_dest
 
 	delete_temp_backups(older_than,sourcepath)
 	cmd_string = "rclone sync " + sourcepath + " " + destpath
