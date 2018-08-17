@@ -24,7 +24,7 @@ frappe.ui.form.on('Backup Settings', {
 				method: "erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.take_backup",
 				freeze: false,
 				callback: function (r) {
-					frappe.errprint(r)
+					frappe.msgprint(r)
 				}
 			})
 		} else {

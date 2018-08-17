@@ -150,11 +150,15 @@ def compress_files(file_DIR, Backup_DIR):
 	
 def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log):
 	# destpath = "gdrive:" + destfolder + " --drive-use-trash"
+	from frappe.utils import get_bench_path
+	sourcepath=get_bench_path()+"/sites"+sourcepath.replace("./", "/")
 	final_dest = str(site) + "/" + destfolder
 	final_dest = final_dest.replace(" ", "_")
 	rclone_remote_name=frappe.db.get_value('Backup Settings', None, 'rclone_remote_name')
-	destpath = rclone_remote_name+":"+ final_dest
-	
+	rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
+
+	# destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
+	destpath = rclone_remote_name+":"+final_dest
 
 	delete_temp_backups(older_than,sourcepath)
 	cmd_string = "rclone sync " + sourcepath + " " + destpath

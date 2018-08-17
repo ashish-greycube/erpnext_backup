@@ -16,8 +16,11 @@ Configure rclone for SFTP upload
         q) Quit config
         n/s/q> n
         name> remote
+rclone mkdir remote:path/to/directory
+rclone mkdir greycubelive:backup_from_sitename
 Install App
     Update Backup Settings--> RClone Remote Name--> with name noted above
+     Update Backup Settings--> RClone Remote Directory Path--> with directory noted above
 #### License
 
 MIT
