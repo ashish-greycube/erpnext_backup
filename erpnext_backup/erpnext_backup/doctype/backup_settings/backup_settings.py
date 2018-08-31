@@ -114,25 +114,43 @@ def backup_to_service():
 	site = frappe.db.get_value('Global Defaults', None, 'default_company')
 	if cint(frappe.db.get_value("Backup Settings", None, "enable_database")):
 		# upload database
-		backup = new_backup(older_than,ignore_files=True)
+		# backup = new_backup(older_than,ignore_files=True)
+		backup = new_backup(ignore_files=False, backup_path_db=None,
+							backup_path_files=None, backup_path_private_files=None, force=True)
+		db_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
+		files_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_files))
+		private_files = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_private_files))
+		folder = os.path.basename(db_filename)[:15] + '/'
+		print db_filename
+		print files_filename
+		print private_files
+		print folder
+
+
 		# filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
 		if cloud_sync:
-			sync_folder(site,older_than,get_backups_path(), "database",did_not_upload,error_log)
+			print 'inside uploading db to cloud'
+			sync_folder(site,older_than,db_filename, "database",did_not_upload,error_log)
 
 	BASE_DIR = os.path.join( get_backups_path(), '../file_backups' )
+	# print(get_backups_path())
+	# print BASE_DIR
 
-	if cint(frappe.db.get_value("Backup Settings", None, "enable_files")):
-		Backup_DIR = os.path.join(BASE_DIR, "files")
-		compress_files(get_files_path(), Backup_DIR)
+
+	if cint(frappe.db.get_value("Backup Settings", None, "enable_public_files")):
+		# Backup_DIR = os.path.join(BASE_DIR, "files")
+		# compress_files(get_files_path(), Backup_DIR)
 		if cloud_sync:
-			sync_folder(site,older_than,Backup_DIR, "public-files",did_not_upload,error_log)
+			print 'inside uploading public to cloud'
+			sync_folder(site,older_than,files_filename, "public-files",did_not_upload,error_log)
 
 	
 	if cint(frappe.db.get_value("Backup Settings", None, "enable_private_files")):
-		Backup_DIR = os.path.join(BASE_DIR, "private/files")
-		compress_files(get_files_path(is_private=1), Backup_DIR)
+		# Backup_DIR = os.path.join(BASE_DIR, "private/files")
+		# compress_files(get_files_path(is_private=1), Backup_DIR)
 		if cloud_sync:
-			sync_folder(site,older_than,Backup_DIR, "private-files",did_not_upload,error_log)
+			print 'inside uploading private to cloud'
+			sync_folder(site,older_than,private_files, "private-files",did_not_upload,error_log)
 		
 	frappe.db.close()
 	# frappe.connect()
@@ -155,13 +173,14 @@ def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log)
 	final_dest = str(site) + "/" + destfolder
 	final_dest = final_dest.replace(" ", "_")
 	rclone_remote_name=frappe.db.get_value('Backup Settings', None, 'rclone_remote_name')
-	rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
+	# rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 
-	destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
-	# destpath = rclone_remote_name+":"+final_dest
+	# destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
+	destpath = rclone_remote_name+":"+final_dest
 
-	delete_temp_backups(older_than,sourcepath)
+	# delete_temp_backups(older_than,sourcepath)
 	cmd_string = "rclone sync " + sourcepath + " " + destpath
+	print '###########'
 	print cmd_string
 	# frappe.errprint(cmd_string)
 	try:
