@@ -8,9 +8,12 @@ from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue
 from frappe.utils import cint, split_emails, get_site_base_path, cstr, today,get_backups_path,get_datetime
 from datetime import datetime, timedelta
+from frappe.utils import get_site_path, cint, get_url
 
 import os
 from frappe import _
+from frappe.utils.file_manager import save_file_on_filesystem
+from frappe.utils.change_log import get_versions
 #Global constants
 verbose = 0
 ignore_list = [".DS_Store"]
@@ -56,6 +59,11 @@ def take_backup_to_service():
 	
 	did_not_upload, error_log = [], []
 	try:
+
+		# create a file to note the app and its versions
+		content=frappe.as_json(frappe.utils.change_log.get_versions())
+		save_file_on_filesystem('app_name_versions.txt',content , content_type='utf-8', is_private=0)
+
 		did_not_upload, error_log = backup_to_service()
 		if did_not_upload: raise Exception
 		
@@ -96,10 +104,52 @@ def send_email(success, service_name, error_status=None):
 	recipients = split_emails(frappe.db.get_value("Backup Settings", None, "send_notifications_to"))
 	frappe.sendmail(recipients=recipients, subject=subject, message=message)
 
+def get_scheduled_backup_limit():
+	backup_limit = frappe.db.get_singles_value('Backup Settings', 'backup_limit')
+	return cint(backup_limit)
 
+def cleanup_old_backups(site_path, files, limit,endswith):
+	backup_paths = []
+	for f in files:
+		if f.endswith(endswith):
+			_path = os.path.abspath(os.path.join(site_path, f))
+			backup_paths.append(_path)
+
+	backup_paths = sorted(backup_paths, key=os.path.getctime)
+	files_to_delete = len(backup_paths) - limit
+
+	for idx in range(0, files_to_delete):
+		f = os.path.basename(backup_paths[idx])
+		files.remove(f)
+		print '$$$$$$4'
+		print idx
+		os.remove(backup_paths[idx])
+
+
+@frappe.whitelist()
 def backup_to_service():
 	from frappe.utils.backups import new_backup
 	from frappe.utils import get_files_path
+
+
+	#delete old
+	path = get_site_path('private', 'backups')
+	files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
+	backup_limit = get_scheduled_backup_limit()
+	endswith='sql.gz'
+	if len(files) > backup_limit:
+		cleanup_old_backups(path, files, backup_limit,endswith)
+
+	endswith='files.tar'
+	if len(files) > backup_limit:
+		cleanup_old_backups(path, files, backup_limit,endswith)
+	
+	endswith='private-files.tar'
+	if len(files) > backup_limit:
+		cleanup_old_backups(path, files, backup_limit,endswith)
+
+
+	#delete old
 	
 	# upload files to files folder
 	did_not_upload = []
@@ -112,6 +162,7 @@ def backup_to_service():
 	cloud_sync = cint(frappe.db.get_value('Backup Settings', None, 'cloud_sync'))
 
 	site = frappe.db.get_value('Global Defaults', None, 'default_company')
+
 	if cint(frappe.db.get_value("Backup Settings", None, "enable_database")):
 		# upload database
 		# backup = new_backup(older_than,ignore_files=True)
@@ -168,20 +219,34 @@ def compress_files(file_DIR, Backup_DIR):
 	
 def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log):
 	# destpath = "gdrive:" + destfolder + " --drive-use-trash"
+	rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 	from frappe.utils import get_bench_path
 	sourcepath=get_bench_path()+"/sites"+sourcepath.replace("./", "/")
-	final_dest = str(site) + "/" + destfolder
+#	final_dest = rclone_remote_directory+"/"+str(site) + "/" + destfolder
+
+	final_dest = rclone_remote_directory+"/"+str(site)
 	final_dest = final_dest.replace(" ", "_")
+	print final_dest
 	rclone_remote_name=frappe.db.get_value('Backup Settings', None, 'rclone_remote_name')
 	# rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 
 	# destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
 	destpath = rclone_remote_name+":"+final_dest
 
+	print '@@@@@@@@@@###########'
+	BASE_DIR = os.path.join( get_backups_path(), '../file_backups' )
+	Backup_DIR = os.path.join(BASE_DIR, "private/files")
+	print get_bench_path()+"/sites"+get_backups_path().replace("./", "/")
+
+	# print older_than
+	print sourcepath
 	# delete_temp_backups(older_than,sourcepath)
+	print destpath
+	sourcepath = get_bench_path()+"/sites"+get_backups_path().replace("./", "/")
 	cmd_string = "rclone sync " + sourcepath + " " + destpath
-	print '###########'
+	
 	print cmd_string
+	print '###########'
 	# frappe.errprint(cmd_string)
 	try:
 		err, out = frappe.utils.execute_in_shell(cmd_string)
@@ -226,29 +291,6 @@ def is_file_old(db_file_name, older_than=24):
 			if verbose: print "File does not exist"
 			return True
 			
-def cleanup_old_backups(site_path, files, limit):
-	backup_paths = []
-	for f in files:
-		if f.endswith('sql.gz'):
-			_path = os.path.abspath(os.path.join(site_path, f))
-			backup_paths.append(_path)
-
-	backup_paths = sorted(backup_paths, key=os.path.getctime)
-	files_to_delete = len(backup_paths) - limit
-
-	for idx in range(0, files_to_delete):
-		f = os.path.basename(backup_paths[idx])
-		files.remove(f)
-
-		os.remove(backup_paths[idx])
-
-def delete_downloadable_backups():
-	path = get_site_path('private', 'backups')
-	files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
-	backup_limit = get_scheduled_backup_limit()
-
-	if len(files) > backup_limit:
-		cleanup_old_backups(path, files, backup_limit)
 			
 if __name__=="__main__":
 	backup_to_service()
