@@ -9,6 +9,8 @@ from frappe.utils.background_jobs import enqueue
 from frappe.utils import cint, split_emails, get_site_base_path, cstr, today,get_backups_path,get_datetime
 from datetime import datetime, timedelta
 from frappe.utils import get_site_path, cint, get_url
+from frappe.utils.background_jobs import enqueue
+
 
 import os
 from frappe import _
@@ -180,8 +182,9 @@ def backup_to_service():
 
 		# filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
 		if cloud_sync:
-			print 'inside uploading db to cloud'
-			sync_folder(site,older_than,db_filename, "database",did_not_upload,error_log)
+			print 'inside uploading db to cloud for db	----------------------'
+    		enqueue('erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.sync_folder',site=site,older_than=older_than,sourcepath=db_filename, destfolder="database",did_not_upload=did_not_upload,error_log=error_log,timeout=2000, queue="long")
+			
 
 	BASE_DIR = os.path.join( get_backups_path(), '../file_backups' )
 	# print(get_backups_path())
@@ -193,16 +196,15 @@ def backup_to_service():
 		# compress_files(get_files_path(), Backup_DIR)
 		if cloud_sync:
 			print 'inside uploading public to cloud'
-			sync_folder(site,older_than,files_filename, "public-files",did_not_upload,error_log)
-
+    		enqueue('erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.sync_folder',site=site,older_than=older_than,sourcepath=files_filename, destfolder="public-files",did_not_upload=did_not_upload,error_log=error_log,timeout=2000, queue="long")
 	
 	if cint(frappe.db.get_value("Backup Settings", None, "enable_private_files")):
 		# Backup_DIR = os.path.join(BASE_DIR, "private/files")
 		# compress_files(get_files_path(is_private=1), Backup_DIR)
 		if cloud_sync:
 			print 'inside uploading private to cloud'
-			sync_folder(site,older_than,private_files, "private-files",did_not_upload,error_log)
-		
+			enqueue('erpnext_backup.erpnext_backup.doctype.backup_settings.backup_settings.sync_folder',site=site,older_than=older_than,sourcepath=private_files,destfolder="private-files",did_not_upload=did_not_upload,error_log=error_log,timeout=2000, queue="long")
+			#sync_folder(site,older_than,private_files, "private-files",did_not_upload,error_log)
 	frappe.db.close()
 	# frappe.connect()
 	return did_not_upload, list(set(error_log))
