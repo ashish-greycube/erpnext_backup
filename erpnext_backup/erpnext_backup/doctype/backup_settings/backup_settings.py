@@ -218,9 +218,18 @@ def compress_files(file_DIR, Backup_DIR):
 	archivepath = os.path.join(Backup_DIR,archivename)
 	make_archive(archivepath,'zip',file_DIR)
 
-	
+@frappe.whitelist()	
 def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log):
 	# destpath = "gdrive:" + destfolder + " --drive-use-trash"
+	print '@@@@@@@@@@###########'
+	site='Saudi Aramco'
+	older_than=1
+	sourcepath='./poc.greycube.in/private/backups/20190207_053023-poc_greycube_in-database.sql.gz'
+	destfolder="database"
+	did_not_upload=[]
+	error_log=[]
+	print site,older_than,sourcepath, destfolder,did_not_upload,error_log
+	print '@@@@@@@@@@###########'
 	rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 	from frappe.utils import get_bench_path
 	sourcepath=get_bench_path()+"/sites"+sourcepath.replace("./", "/")
