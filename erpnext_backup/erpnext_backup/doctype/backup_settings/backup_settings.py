@@ -170,15 +170,10 @@ def backup_to_service():
 		files_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_files))
 		private_files = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_private_files))
 		folder = os.path.basename(db_filename)[:15] + '/'
-		print db_filename
-		print files_filename
-		print private_files
-		print folder
 
 
 		# filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
 		if cloud_sync:
-			print 'inside uploading db to cloud'
 			sync_folder(site,older_than,db_filename, "database",did_not_upload,error_log)
 
 	BASE_DIR = os.path.join( get_backups_path(), '../file_backups' )
@@ -190,7 +185,6 @@ def backup_to_service():
 		# Backup_DIR = os.path.join(BASE_DIR, "files")
 		# compress_files(get_files_path(), Backup_DIR)
 		if cloud_sync:
-			print 'inside uploading public to cloud'
 			sync_folder(site,older_than,files_filename, "public-files",did_not_upload,error_log)
 
 	
@@ -198,7 +192,6 @@ def backup_to_service():
 		# Backup_DIR = os.path.join(BASE_DIR, "private/files")
 		# compress_files(get_files_path(is_private=1), Backup_DIR)
 		if cloud_sync:
-			print 'inside uploading private to cloud'
 			sync_folder(site,older_than,private_files, "private-files",did_not_upload,error_log)
 		
 	frappe.db.close()
@@ -224,27 +217,20 @@ def sync_folder(site,older_than,sourcepath, destfolder,did_not_upload,error_log)
 
 	final_dest = rclone_remote_directory+"/"+str(site)
 	final_dest = final_dest.replace(" ", "_")
-	print final_dest
 	rclone_remote_name=frappe.db.get_value('Backup Settings', None, 'rclone_remote_name')
 	# rclone_remote_directory=frappe.db.get_value('Backup Settings', None, 'rclone_remote_directory_path')
 
 	# destpath = rclone_remote_name+":"+rclone_remote_directory+'/'+final_dest
 	destpath = rclone_remote_name+":"+final_dest
 
-	print '@@@@@@@@@@###########'
 	BASE_DIR = os.path.join( get_backups_path(), '../file_backups' )
 	Backup_DIR = os.path.join(BASE_DIR, "private/files")
-	print get_bench_path()+"/sites"+get_backups_path().replace("./", "/")
 
 	# print older_than
-	print sourcepath
 	# delete_temp_backups(older_than,sourcepath)
-	print destpath
 	sourcepath = get_bench_path()+"/sites"+get_backups_path().replace("./", "/")
 	cmd_string = "rclone sync " + sourcepath + " " + destpath
 	
-	print cmd_string
-	print '###########'
 	# frappe.errprint(cmd_string)
 	try:
 		err, out = frappe.utils.execute_in_shell(cmd_string)
@@ -280,13 +266,13 @@ def is_file_old(db_file_name, older_than=24):
 			file_datetime = datetime.fromtimestamp\
 						(os.stat(db_file_name).st_ctime)
 			if datetime.today() - file_datetime >= timedelta(hours = older_than):
-				if verbose: print "File is old"
+				if verbose: print("File is old")
 				return True
 			else:
-				if verbose: print "File is recent"
+				if verbose: print("File is recent")
 				return False
 		else:
-			if verbose: print "File does not exist"
+			if verbose: print("File does not exist")
 			return True
 			
 			
