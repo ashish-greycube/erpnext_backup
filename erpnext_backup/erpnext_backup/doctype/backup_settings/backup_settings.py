@@ -121,8 +121,6 @@ def cleanup_old_backups(site_path, files, limit,endswith):
 	for idx in range(0, files_to_delete):
 		f = os.path.basename(backup_paths[idx])
 		files.remove(f)
-		print '$$$$$$4'
-		print idx
 		os.remove(backup_paths[idx])
 
 
